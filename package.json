@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": "https://tu-usuario-de-github.github.io/serenly",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -12,10 +13,12 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.52.1",
     "@tailwindcss/vite": "^4.1.11",
     "lucide-react": "^0.526.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-router-dom": "^7.7.1",
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
@@ -28,6 +31,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "gh-pages": "^6.3.0",
     "globals": "^16.3.0",
+    "supabase": "^2.31.8",
     "vite": "^7.0.4"
   }
 }
