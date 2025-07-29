@@ -1,229 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { RotateCcw, ThumbsUp, ThumbsDown, X, ArrowUp, Clipboard, ClipboardCheck, Moon, Sun, Menu } from 'lucide-react';
-import './index.css'; // Asegúrate de que tu archivo de estilos principal esté importado
+import { Sparkles, RotateCcw, ThumbsUp, ThumbsDown, User, X, ArrowUp, Clipboard, ClipboardCheck, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Settings } from 'lucide-react';
 
-// --- 1. CONFIGURACIÓN DE LA API Y PERSONALIDAD DE LA IA ---
+// --- Importaciones Seguras y de Firebase ---
 
-// 🚨 ¡ADVERTENCIA DE SEGURIDAD IMPORTANTE! 🚨
-// Tu clave de API es visible públicamente en este archivo.
-// Una vez que soluciones el problema, considera protegerla usando un backend intermediario.
-const OPENROUTER_API_KEY = "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";
+// 1. Se importa el gestor de claves en lugar de usar variables de entorno directamente.
+import { getFirebaseConfig, getOpenRouterKey } from './keyManager.js'; 
 
-// Prompt del sistema con la personalidad de la IA
-const SYSTEM_PROMPT = `
- haz las respuestas cortas como estas, tines que preguntarme, eres el psicologo, maximo 150 caracteres, modo gen z
-haz conversaciones como estas, se mas asertivo
+// 2. Importaciones del SDK de Firebase.
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
+import promptText from './prompt.txt?raw';
 
-home
-insights
-history
+// --- Inicialización Segura de Servicios ---
 
-profile
-gen z mode
+// 3. Se obtiene la configuración completa de Firebase desde el keyManager.
+const firebaseConfig = getFirebaseConfig();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
+// 4. Se obtiene la clave de OpenRouter desde el keyManager.
+const OPENROUTER_API_KEY = getOpenRouterKey();
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-Aw, that’s what I’m here for—to walk with you through the heavy stuff. I think writing tonight sounds like a really thoughtful step—it’s giving yourself space to feel and sort things out. You’re doing great, really. And hey, I’m here any time you wanna check in.
 
-thanks… that actually means a lot. i don’t feel *totally* okay yet, but this makes it feel a little less heavy, you know? like i’m not just stuck in it alone. i’m gonna try writing tonight—see what comes out. appreciate you being here.
-Exactly—being honest with yourself first is such a solid move. It’s like giving yourself a map before you try navigating the conversation. And hey, even if you don’t share it right away, you’re still taking action, which is brave. You’ve got this.
+// --- El resto del componente permanece igual ---
 
-yeah… i think i will. it feels safer, and maybe if i can see it all written out, it won’t seem so overwhelming. even if i don’t share it right away, at least *i’ll* know what’s really going on inside. and maybe that’s a start, right? just being honest with myself.
-Oh, absolutely that counts—it’s like giving yourself space to untangle the mess before jumping in. Writing lets you shape what you wanna say without the heat of the moment tripping you up. Plus, it can even help you figure out what feels most true to share. That little spark of hopeful energy? Maybe lean into that.
-
-i think i’m somewhere in between. like… i’m not totally ready, but i also don’t want to keep sitting with this forever. just thinking about saying something makes my chest feel tight, but also a little hopeful? maybe i could try writing it down first—get the words out without the pressure of a convo right away. would that still count as a step?
-Yeah, I hear that—a mix of wanting to keep the peace but also not wanting to carry this weight anymore. Starting small might be the key here, like even saying, “Hey, I need to talk about something that’s been bothering me.” No need to unload it all at once, but opening the door can feel lighter than holding it all in. Do you feel ready for a small step or still kinda sitting with the idea?
-
-mmm… i think it *might* be doable, but it also kinda scares me. like, i don’t even know if i can find the right words, or if she’d even take it seriously. part of me wants to just keep it in, but another part's tired of pretending everything’s fine. so… maybe i could try saying *something*—just not sure how to start, you know?
-Hmm, well, if it feels like you’re carrying all this hurt, maybe start small—what would it mean for you to say what you need or feel around her? Even just naming it for yourself could make a difference. Does that feel doable or way too much right now?
-
-what should i do
-Ah, that’s tough, and it sounds like it hurts, huh? When you say she’s been bad to you, are we talking criticism, neglect, or something else? What does it feel like when you’re around her?
-
-she is bad to me
-Oh, I see—you mean your relationship with her feels rocky? That’s layered. What’s been going on between you two?
-
-im also bad with my mother
-Right, just passing—something solid, not a million expectations stacked high. So, what’s one thing you do feel confident about for the exam? Even a small win counts here.
-
-enough is pass the exam
-Oh, yeah, that’s sneaky, isn’t it? Like your brain keeps shifting the finish line no matter how much you prepare or achieve. If you could rewrite the rules, what would "enough" actually look like for you—just for this exam, no moving targets?
-
-its a moving target
-Ah, oof, that sounds heavy. It's like you're putting yourself on trial, huh? But, honestly—if you step back for a sec—why do you think you’re setting the bar there? Does "enough" even have a clear definition for you, or is it more of a moving target?
-
-i think im not enought
-Okay, I get that—it’s like you’re questioning if you’re enough for this, huh? What’s your brain been saying about your skills, if you really break it down? Are there any patterns popping up?
-
-im not sure about my skills
-Ah, the classic pre-exam jitters! Totally natural. Are you feeling like it's about not knowing the material, or just the pressure to do well?
-
-tomorrow i have an exam
-Mm, yeah, I hear you. Nervous like restless energy, or more like your stomach’s in knots? What's got that feeling bubbling up?
-
-i feel nervous
-Oh hey! Welcome back—how’s everything been feeling lately?
-running low
-running low - used -3196% of your daily limit. consider wrapping up or asking shorter questions.
-
-
-Oh hey, good to hear from you. So, what’s been on your mind lately?
-
-hey :) umm… honestly? i’ve been feeling kinda all over the place. like, not totally sure what i’m feeling, just this weird mix of tired and anxious, even when nothing specific is wrong. ever get that?
-Oh yeah, that kind of uneasy buzz that never quite leaves—like your brain’s running a marathon but forgot to tell you why. It’s no wonder it feels exhausting. What’s been going on in your world lately that might be stirring this up, even a tiny bit?
-
-yeah… that’s exactly it. it’s like i’m always bracing for something, but i don’t even know what. i think part of it is just pressure—like, to have it together, to keep up, to not fall behind. and then even when i *do* rest, i feel guilty, like i should be doing more. it’s this loop i can’t seem to step out of.
-Oof, yeah, that guilt-for-rest thing is brutal. It sounds like there’s this constant inner voice telling you you’re not doing “enough,” no matter what you do. And honestly? That kind of pressure—managing and outperforming—is exhausting because it never lets up. If you could hit pause on that voice for a sec, what do you think you’d really need right now?
-
-honestly? i think i’d need someone to just *see* me—like, really see me—even when i’m not achieving or fixing or hustling. just someone to say, “you’re okay. you’re still worthy, even when you’re not ‘on.’” i think i need that reminder... and maybe also permission to be soft for a while. to stop holding everything so tightly.
-Oh wow, I felt that. It’s like you’re craving permission to just be—no proving, no performing, just existing, soft and enough as you are. That longing to be seen like that? It’s incredibly human, and honestly… you deserve it. So, if we’re giving you that permission today, what does soft look like for you right now?
-
-soft for me right now… probably means slowing down the constant chatter in my head. maybe putting on some chill music, or just sitting somewhere quiet without feeling like i need to do something. it’s like giving myself a break from the noise and pressure, even if it’s just for a few minutes. maybe even letting myself cry if i need to, without feeling ashamed.
-Oh yeah, that sounds like a small but powerful reset—giving yourself space to breathe, let all that noise simmer down, and just feel whatever comes up, no judgment. Crying? Honestly, it’s one of your brain’s ways of saying, “Hey, I need to let this out.” If you can lean into that softness, even for a few minutes, I think it could be really grounding for you. Want me to help you brainstorm ways to make that space happen?
-
-yeah, that’d be great. i think having some ideas to make that space would help—it feels a bit hard to just *switch off* sometimes, like my mind’s on a loop. maybe some small things i can do, even when everything feels overwhelming.
-For sure, switching off isn’t exactly a flip-of-a-switch thing, huh? Maybe starting small—something like lighting a candle, wrapping up in a blanket, or even just stepping outside for fresh air—little sensory resets that signal “Okay, we’re slowing down now.” Could you pair those with music or even just deep, slow breaths to help dial down that loop in your head? Anything there feel doable?
-
-yeah, i think i could try that. maybe lighting a candle or just stepping outside sounds simple enough to start with. pairing it with some slow breaths sounds helpful too—like giving myself permission to pause without feeling guilty. thanks for breaking it down like that.
-Absolutely, it doesn’t have to be big or perfect—just enough to nudge your brain out of overdrive for a bit. And hey, permission granted: you deserve this pause, no guilt required. Let me know how it feels if you try it, okay?
-
-So, how’re you feeling today? Are you finding those little pauses or, um, softer moments we talked about? Or is it still feeling kinda heavy?
-
-¡entendido! ahora yo seré quien pide ayuda, y tú me respondes. aquí voy: --- hey… i’ve been feeling really stuck lately. like, i can’t focus on anything and everything just feels overwhelming. i don’t even know where to start fixing it. have you ever felt like that?
-Oh yeah, that’s such a tough place to be. It's like your brain’s spinning in every direction and you can’t get a grip on anything, huh? Sometimes it helps to zoom out first—what’s the loudest thing in your head right now, like, the thing that’s making all the other noise feel impossible?
-
-honestly, it’s this constant worry about the future — like i’m stuck in this loop of “what ifs” and it’s draining all my energy. i want to plan and prepare, but instead, i just end up feeling paralyzed. it’s like my brain’s stuck on overdrive but going nowhere.
-Ugh, I feel that—it’s like your mind’s trying to solve a puzzle with infinite pieces, right? The crazy thing is, that loop feeds itself, ’cause the more you try to control every “what if,” the more overwhelmed you get. What would it feel like to, uh, loosen the grip—just a little—and focus on what’s right here, right now?
-
-that sounds… really hard, but also kind of freeing. i think focusing on the present would help, but my brain keeps pulling me back into the future, like a magnet. maybe if i had a way to remind myself to come back—like a little mental anchor or something—i could catch myself before i spiral too far.
-Oh yes, I love the idea of an anchor—a little reminder to reel you back in. Maybe it’s as simple as, like, grounding yourself with something physical or saying a phrase, like “I'm here now,” when you catch your brain wandering off. What kind of anchor feels doable for you? Something tangible, like a stone in your pocket, or maybe a calming mantra?
-
-hmm, i think a physical thing might work better for me. like carrying a small smooth stone or a bracelet i can touch when i feel my mind racing. something that feels real and can pull me back to the moment. a mantra sounds nice too, but i worry i might forget to say it when i really need it.
-Oh, a smooth stone or bracelet sounds perfect—it gives your hand something steady to hold onto when your thoughts feel all over the place. Maybe, uh, you could pair it with a simple phrase, like “Breathe, you’re here now,” just to add that extra grounding. No pressure, though—what matters is whatever feels natural and comforting for you. Would you wanna try that?
-
-yeah, i’d definitely be willing to try that. having something physical to hold onto sounds like it could make a real difference. and a short phrase might help, too, even if i don’t say it all the time. thanks for helping me figure this out.
-You got it! Honestly, it’s kind of amazing how those small, simple things can really shift the vibe, y'know? Give it a shot, and, uh, be patient with yourself—every time you catch your mind racing and come back, that’s a win. Let me know how it feels, yeah?
-
-will do! i’m gonna keep that stone close and try the phrase when i can. feels good knowing i’m not totally alone in this. thanks for listening—it really helps more than you know.
-Aw, I’m so glad to hear that. You’re never alone in figuring this out, okay? And hey, taking even tiny steps like this is a big deal, so don’t forget to give yourself some credit. You’ve got this—just take it one breath at a time.
-
-Oh hey, how’ve you been? Are you still carrying that grounding stone?
-
-hey! so, i’ve been trying to get into healthier habits, but every time i start, i lose motivation after a few days. it’s like i want to change, but my brain just... quits. ever felt like that?
-Oh yeah, totally! It’s like your brain gives the “yay, new habit!” speech, then just hits snooze, huh? Sounds frustrating—but hey, what’s been happening right before you feel that switch? Anything specific that makes you hit pause?
-
-yeah, exactly. usually, i start feeling overwhelmed by how big the change feels—like, suddenly i’m supposed to overhaul my entire routine, and it just feels impossible to keep up. then the motivation fades, and i end up back where i started. it’s exhausting.
-Oh, I hear you—when it starts feeling like this massive mountain, no wonder it’s overwhelming. Your brain’s probably like, “Nope, too much, can’t do it.” What if, instead of a big overhaul, you tried sneaking in small, almost laughably easy steps—like ridiculously tiny wins—just to build momentum?
-
-that actually sounds way more doable. like, instead of trying to run before i can walk, i could focus on just drinking one extra glass of water a day or taking a five-minute walk. little wins that don’t feel like a mountain. i think i could try that.
-Exactly! Micro wins for the win. When they’re small like that, your brain’s a lot less likely to freak out, you know? Plus, those tiny shifts add up—before you know it, you’re halfway up that mountain without even realizing. What’s one little focus you wanna start with?
-
-hmm, maybe i’ll start with just drinking more water. seems simple, but i always forget during the day. setting a reminder on my phone could help me actually remember to do it. what do you think?
-Oh, that’s smart—your phone can be like your hydration buddy! Simple, no pressure, and totally doable. Plus, every sip is basically a mini high-five for building a new habit. Feels good, doesn’t it?
-
-yeah, it actually does feel good! i’m gonna give it a shot and see how it goes. thanks for helping me break it down—it makes it feel a lot less scary to start small.
-Absolutely! Starting small is kinda underrated but so powerful, you know? You’ve got this—just keep celebrating those tiny wins, and watch how they build up over time. Alright, how’re you feeling about everything else lately?
-
-honestly, i’ve been feeling a bit stressed about work deadlines piling up. it’s like as soon as i tick one thing off, two more pop up. trying to keep calm, but sometimes it feels like i’m juggling too much.
-Oh wow, yeah, that sounds like a never-ending game of whack-a-mole—super stressful. When it’s all piling up like that, does it help to take a step back and figure out what’s actually urgent versus just what feels urgent? Or maybe even dropping a ball or two, if that’s okay to do?
-
-yeah, that’s something i’ve been trying to do—prioritizing what really needs to get done first. but sometimes it feels like everything is urgent, and i worry that if i let anything slide, things will fall apart. it’s a tough balance.
-Ah, I hear ya—it’s like every task is yelling, “Pick me!” Honestly, that fear of things falling apart can make it hard to know what’s truly worth your energy. Do you ever stop and ask, “What'll actually happen if I don’t get this done today?” Might help turn the volume down on the less urgent stuff.
-
-that’s a good point. i haven’t really thought about the real consequences of delaying some tasks. maybe if i ask myself that, i can be less hard on myself and focus better on what really matters. it might ease some of that pressure.
-Exactly! When you separate the “must-dos” from the “eh, maybe laters,” it’s like giving your brain a break from all the noise. Plus, being less hard on yourself? That’s always a win. You’re doing great—remember, you’re allowed to breathe through the chaos, okay?
-
-thanks, i really needed to hear that. i’m going to try to be kinder to myself and take things one step at a time. it feels good to have a plan that doesn’t involve running myself into the ground.
-Oh, for sure! You deserve kindness—from yourself, especially. One step at a time sounds perfect; no need to sprint when walking works just fine. You’ve got this. Feel like you’re ready to tackle the day?
-
-yeah, i think i am. thanks for being here and for the pep talk—it really makes a difference. i’m gonna take a deep breath and get started.
-Love that. Deep breath, and go crush it—but gently, okay? You’ve got this. Talk soon!
-
-
-
-Hey, what’s up? What’s on your mind today?
-
-hey! lately i’ve been feeling kind of disconnected from my friends. like, we’re all busy and when we do talk, it feels kinda surface-level. i miss the deeper stuff. ever felt like that?
-Oh, totally—I get that. It’s like you’re vibing, but not vibing, y’know? Life gets so hectic, and suddenly, it’s all “how’s work?” instead of those late-night, soul-sharing convos. What’s your gut telling you—are they feeling the disconnection too, or is it more on your end?
-
-hmm, i think it’s a bit on both sides. we’re all caught up in our own stuff, but i can tell it’s not quite the same. i guess i’ve been wondering if i should try to bring it up or just wait and see if things shift naturally. what do you think?
-Ah, I see you, playing the "Do-I-Stir-The-Pot" game. Deadass, though? Bringing it up could be a flex—like, you’re showing you care enough to want that depth back. But maybe ease into it, like dropping hints during a convo, instead of diving headfirst into “we need to talk” territory. Periodt—sometimes people mirror the energy you bring.
-
-yeah, that makes sense. starting with small hints sounds less intimidating. maybe i could share something personal or ask a deeper question next time we chat. it feels less risky than a big sit-down talk.
-Exactly, you’re serving intentional vibes without the drama. Sharing something personal? That’s major main character energy—it sets the tone for them to open up too. Highkey, you might find they’re craving deeper talks just as much as you are. Try it out and see if the vibe shifts.
-
-for sure! i’m gonna try dropping a meaningful question or story in our next chat. thanks for the advice—it actually feels exciting to think about reconnecting like that.
-Yesss, I love this for you! You’re totally about to slay the reconnection game. No cap, just being intentional like that will hit different—for them and for you. Let me know how it goes, okay? Rooting for you!
-
-will do! i’ll keep you posted. appreciate the hype—it’s exactly the push i needed.
-Say less—hype is my middle name. You got this, fr. Catch you later, and don’t forget, you’re out here building real connections, not that mid-level small talk. Talk soon!
-
-
-`;
-
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-// ✅ ¡CORREGIDO! Esta es la URL correcta de tu sitio en producción.
-const SITE_URL = "https://nachoglezmur.github.io/serenly/";
-const APP_TITLE = "serenly";
-
-// Función para hacer la llamada a la API de OpenRouter
-const fetchOpenRouterResponse = async (userMessage, chatHistory) => {
-    // Verificación de la API Key
-    if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY.includes("tu_api_key")) {
-        throw new Error("La clave API de OpenRouter no está configurada en App.jsx.");
-    }
-
-    const headers = {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": SITE_URL, // ✅ Se envía la URL correcta a OpenRouter
-        "X-Title": APP_TITLE
-    };
-
-    const messagesToSend = [
-        { "role": "system", "content": SYSTEM_PROMPT },
-        ...chatHistory.slice(-6).map(msg => ({
-            role: msg.type === 'user' ? 'user' : 'assistant',
-            content: msg.content
-        })),
-        { "role": "user", "content": userMessage }
-    ];
-
-    const payload = {
-        "model": "deepseek/deepseek-chat", // Puedes cambiar a otro modelo si prefieres
-        "messages": messagesToSend,
-        "temperature": 0.9,
-        "max_tokens": 150
-    };
-
-    try {
-        const response = await fetch(OPENROUTER_URL, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-            const errorDetails = await response.text();
-            // Este error ocurre si OpenRouter rechaza la petición (ej. por CORS)
-            console.error(`Error de API: ${response.status}`, errorDetails);
-            throw new Error(`Error HTTP ${response.status}: ${errorDetails}`);
-        }
-
-        const result = await response.json();
-        return result.choices[0].message.content;
-
-    } catch (error) {
-        console.error("Error al contactar la API de OpenRouter:", error);
-        throw error; // Propagamos el error para que lo maneje handleSendMessage
-    }
-};
-
-
-// Funciones de utilidad para cookies
-const setCookie = (name, value, days = 365) => {
+// Utility functions for cookies
+const setCookie = (name, value, days = 7) => {
   const expires = new Date();
   expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Strict`;
+  const cookieValue = encodeURIComponent(typeof value === 'object' ? JSON.stringify(value) : value);
+  document.cookie = `${name}=${cookieValue};expires=${expires.toUTCString()};path=/;SameSite=Strict`;
 };
 
 const getCookie = (name) => {
@@ -232,65 +39,587 @@ const getCookie = (name) => {
   for(let i = 0; i < ca.length; i++) {
     let c = ca[i];
     while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    if (c.indexOf(nameEQ) === 0) {
+      return decodeURIComponent(c.substring(nameEQ.length, c.length));
+    }
   }
   return null;
 };
 
+const deleteCookie = (name) => {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+};
 
-// Componente principal de la aplicación
-function App() {
+// OpenRouter API call
+const callOpenRouterAPI = async (messages) => {
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin || "http://localhost:5173",
+        'X-Title': 'Espacio Zen Chat'
+      },
+      body: JSON.stringify({
+        model: 'deepseek/deepseek-chat-v3-0324:freet', // Modelo actualizado para coincidir con la UI
+        messages: [
+          {
+            role: 'system',
+            // MODIFICADO: El contenido ahora se lee desde la variable importada promptText
+            content: promptText
+          },
+          ...messages
+        ],
+        temperature: 0.2,
+        max_tokens: 200
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenRouter API Error:', errorData);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('Error calling OpenRouter API:', error);
+    throw new Error('No pude procesar tu mensaje en este momento. Por favor, inténtalo de nuevo.');
+  }
+};
+
+// Cookie Consent Banner Component
+const CookieConsent = ({ onAccept, onDecline }) => {
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 p-6 shadow-2xl z-50">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0 md:space-x-6">
+          <div className="flex-1">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              <h3 className="text-slate-700 font-medium">Consentimiento de Cookies</h3>
+            </div>
+            <p className="text-slate-600 text-sm font-light leading-relaxed">
+              Utilizamos cookies esenciales para mantener tu sesión activa, recordar tus preferencias de tema y guardar tu historial de conversaciones para una experiencia personalizada y continua. Al continuar, aceptas nuestros{' '}
+              <button className="text-blue-500 hover:text-blue-700 underline font-medium">
+                Términos y Condiciones
+              </button>{' '}
+              y nuestra{' '}
+              <button className="text-blue-500 hover:text-blue-700 underline font-medium">
+                Política de Privacidad
+              </button>.
+            </p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={onDecline}
+              className="px-4 py-2 text-slate-600 hover:text-slate-800 font-light transition-colors duration-200"
+            >
+              Rechazar
+            </button>
+            <button
+              onClick={onAccept}
+              className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md"
+            >
+              Aceptar y Continuar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Terms and Conditions Modal
+const TermsModal = ({ isOpen, onClose, onAccept }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-light text-slate-700">Términos y Condiciones</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        
+        <div className="space-y-6 text-slate-600 font-light leading-relaxed">
+          <section>
+            <h3 className="text-lg font-medium text-slate-700 mb-3">1. Uso del Servicio</h3>
+            <p>
+              Espacio Zen es un chatbot diseñado para proporcionar un entorno tranquilo de conversación. 
+              Al usar este servicio, aceptas utilizarlo de manera responsable y respetuosa.
+            </p>
+          </section>
+
+          <section>
+            <h3 className="text-lg font-medium text-slate-700 mb-3">2. Privacidad y Datos</h3>
+            <p>
+              Recopilamos únicamente la información básica de tu perfil de Google (nombre, email, foto) 
+              y guardamos tus conversaciones localmente en tu navegador para mejorar tu experiencia.
+            </p>
+          </section>
+
+          <section>
+            <h3 className="text-lg font-medium text-slate-700 mb-3">3. Integración con APIs</h3>
+            <p>
+              Este servicio utiliza Firebase para autenticación y OpenRouter para procesamiento de mensajes. 
+              Tus datos se procesan de acuerdo con las políticas de privacidad de estos servicios.
+            </p>
+          </section>
+
+          <section>
+            <h3 className="text-lg font-medium text-slate-700 mb-3">4. Cookies</h3>
+            <p>
+              Utilizamos cookies esenciales para:
+            </p>
+            <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+              <li>Mantener tu sesión activa de forma segura</li>
+              <li>Recordar tus preferencias de tema (claro/oscuro)</li>
+              <li>Guardar tu historial de conversaciones</li>
+              <li>Personalizar tu experiencia con tu nombre</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3 className="text-lg font-medium text-slate-700 mb-3">5. Responsabilidades</h3>
+            <p>
+              Este es un servicio de demostración. No compartas información sensible o personal. 
+              Las conversaciones se almacenan localmente y pueden eliminarse al limpiar los datos del navegador.
+            </p>
+          </section>
+        </div>
+
+        <div className="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-slate-200">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 text-slate-600 hover:text-slate-800 font-light transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onAccept}
+            className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-sm"
+          >
+            Acepto los Términos
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Login Component with Firebase
+const LoginScreen = ({ onLogin, isLoading }) => {
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [showCookieConsent, setShowCookieConsent] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [hasAcceptedCookies, setHasAcceptedCookies] = useState(false);
+
+  useEffect(() => {
+    const cookieConsent = getCookie('zen_cookie_consent');
+    if (cookieConsent === 'accepted') {
+      setHasAcceptedCookies(true);
+    } else {
+      setShowCookieConsent(true);
+    }
+  }, []);
+
+  const handleCookieAccept = () => {
+    setCookie('zen_cookie_consent', 'accepted', 365);
+    setHasAcceptedCookies(true);
+    setShowCookieConsent(false);
+  };
+
+  const handleCookieDecline = () => {
+    setShowCookieConsent(false);
+    alert('Para usar Espacio Zen necesitamos tu consentimiento para usar cookies esenciales.');
+  };
+
+  const handleTermsAccept = () => {
+    setShowTerms(false);
+  };
+
+  const handleFirebaseLogin = async () => {
+    if (!hasAcceptedCookies) {
+      setShowCookieConsent(true);
+      return;
+    }
+
+    setIsSigningIn(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
+      
+      const userData = {
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName,
+        email: firebaseUser.email,
+        picture: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName)}&background=6366f1&color=fff&size=128`,
+        given_name: firebaseUser.displayName?.split(' ')[0] || 'Usuario',
+        family_name: firebaseUser.displayName?.split(' ').slice(1).join(' ') || ''
+      };
+      
+      onLogin(userData);
+    } catch (error) {
+      console.error('Error en el login con Firebase:', error);
+      alert('Error al iniciar sesión. Por favor, inténtalo de nuevo.');
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
+      <div className="bg-white/60 backdrop-blur-sm border border-white/40 rounded-3xl p-8 max-w-md w-full shadow-xl">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
+            <div className="w-8 h-8 bg-white rounded-full opacity-90"></div>
+          </div>
+          <h1 className="text-3xl font-extralight text-slate-700 mb-2 tracking-wide">espacio zen</h1>
+          <p className="text-slate-500 font-light">tu lugar de calma y reflexión</p>
+        </div>
+
+        <div className="space-y-6">
+          <div className="text-center">
+            <p className="text-slate-600 font-light mb-6">Inicia sesión para continuar tu viaje de tranquilidad</p>
+          </div>
+
+          <button
+            onClick={handleFirebaseLogin}
+            disabled={isSigningIn || !hasAcceptedCookies}
+            className="w-full bg-white hover:bg-gray-50 border border-gray-300 rounded-2xl px-6 py-4 flex items-center justify-center space-x-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+          >
+            {isSigningIn ? (
+              <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+            )}
+            <span className="text-gray-700 font-medium">
+              {isSigningIn ? 'Iniciando sesión...' : 'Continuar con Google'}
+            </span>
+          </button>
+
+          {!hasAcceptedCookies && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                <p className="text-amber-800 text-sm font-medium">Consentimiento requerido</p>
+              </div>
+              <p className="text-amber-700 text-xs font-light">
+                Debes aceptar nuestras cookies y términos antes de continuar.
+              </p>
+            </div>
+          )}
+
+          <div className="text-center space-y-2">
+            <button
+              onClick={() => setShowTerms(true)}
+              className="text-blue-500 hover:text-blue-700 text-sm font-light underline transition-colors"
+            >
+              Ver Términos y Condiciones
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-slate-200">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="w-8 h-8 bg-blue-100 rounded-full mx-auto mb-2 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-blue-500" />
+              </div>
+              <p className="text-xs text-slate-500 font-light">IA conversacional</p>
+            </div>
+            <div>
+              <div className="w-8 h-8 bg-emerald-100 rounded-full mx-auto mb-2 flex items-center justify-center">
+                <Moon className="w-4 h-4 text-emerald-500" />
+              </div>
+              <p className="text-xs text-slate-500 font-light">Modo tranquilo</p>
+            </div>
+            <div>
+              <div className="w-8 h-8 bg-violet-100 rounded-full mx-auto mb-2 flex items-center justify-center">
+                <Settings className="w-4 h-4 text-violet-500" />
+              </div>
+              <p className="text-xs text-slate-500 font-light">Seguridad Firebase</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showCookieConsent && (
+        <CookieConsent
+          onAccept={handleCookieAccept}
+          onDecline={handleCookieDecline}
+        />
+      )}
+
+      <TermsModal
+        isOpen={showTerms}
+        onClose={() => setShowTerms(false)}
+        onAccept={handleTermsAccept}
+      />
+    </div>
+  );
+};
+
+// User Menu Component
+const UserMenu = ({ user, onLogout, isDarkMode }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isOpen && !event.target.closest('.user-menu')) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="relative user-menu">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-10 h-10 rounded-full overflow-hidden border-2 ${isDarkMode ? 'border-slate-600' : 'border-white'} hover:scale-105 transition-transform duration-200`}
+      >
+        <img
+          src={user.picture}
+          alt={user.name}
+          className="w-full h-full object-cover"
+        />
+      </button>
+
+      {isOpen && (
+        <div className={`absolute bottom-14 left-0 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} border rounded-2xl shadow-lg p-4 w-64 z-50`}>
+          <div className="flex items-center space-x-3 mb-4 pb-3 border-b border-gray-200 dark:border-slate-700">
+            <img
+              src={user.picture}
+              alt={user.name}
+              className="w-10 h-10 rounded-full"
+            />
+            <div>
+              <p className={`font-medium ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}>{user.name}</p>
+              <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{user.email}</p>
+            </div>
+          </div>
+          
+          <button
+            onClick={onLogout}
+            className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg ${isDarkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-700 hover:bg-gray-100'} transition-colors duration-200`}
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Cerrar sesión</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Weekly Insights Component
+const WeeklyInsights = ({ onClose, user }) => {
+  return (
+    <div className="fixed inset-0 bg-slate-900 bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-3xl p-8 max-w-lg w-full mx-4 shadow-xl border border-slate-200" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+            <span className="text-slate-500 text-sm font-light tracking-wide">jul 21 - jul 27</span>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-extralight text-slate-700 mb-2 tracking-wide">
+            Hola, {user?.given_name || 'usuario'}
+          </h2>
+          <p className="text-slate-500 font-light text-sm">Tus reflexiones semanales están listas</p>
+        </div>
+
+        <div className="mb-8">
+          <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-8 text-center border border-white/40">
+            <div className="relative">
+              <div className="absolute -top-2 -right-2 w-4 h-4 bg-blue-200 rounded-full opacity-60"></div>
+              <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-indigo-200 rounded-full opacity-40"></div>
+              
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-white" />
+                </div>
+                <p className="text-slate-600 text-sm mb-6 font-light">potenciado por IA avanzada</p>
+                <button className="text-slate-700 font-light flex items-center space-x-2 mx-auto hover:text-slate-900 transition-colors group">
+                  <span>explorar ahora</span>
+                  <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+                    <ChevronRight className="w-3 h-3" />
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+              <p className="text-slate-500 text-xs font-light tracking-wide uppercase">conversaciones</p>
+            </div>
+            <p className="text-2xl font-extralight text-slate-700">12</p>
+          </div>
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="w-2 h-2 bg-violet-400 rounded-full"></div>
+              <p className="text-slate-500 text-xs font-light tracking-wide uppercase">mensajes IA</p>
+            </div>
+            <p className="text-2xl font-extralight text-slate-700">89</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ZenChatbot = () => {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [showWeeklyInsights, setShowWeeklyInsights] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [copiedId, setCopiedId] = useState(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const userData = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName,
+          email: firebaseUser.email,
+          picture: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName)}&background=6366f1&color=fff&size=128`,
+          given_name: firebaseUser.displayName?.split(' ')[0] || 'Usuario',
+          family_name: firebaseUser.displayName?.split(' ').slice(1).join(' ') || ''
+        };
+        setUser(userData);
+        setCookie('zen_user', JSON.stringify(userData), 30);
+        
+        const savedMessages = getCookie('zen_messages');
+        if (savedMessages) {
+          try {
+            setChatMessages(JSON.parse(savedMessages));
+          } catch {
+            setChatMessages([]);
+          }
+        } else {
+            const welcomeMessage = {
+              id: Date.now().toString(),
+              type: 'bot',
+              content: `¡Hola de nuevo, ${userData.given_name}! Me alegra verte. ¿Cómo te sientes hoy?`,
+              feedback: null
+            };
+            setChatMessages([welcomeMessage]);
+        }
+      } else {
+        setUser(null);
+        setChatMessages([]);
+        deleteCookie('zen_user');
+        deleteCookie('zen_messages');
+      }
+      setIsLoading(false);
+    });
+
     const savedTheme = getCookie('zen_theme');
-    setIsDarkMode(savedTheme === 'dark');
-    setChatMessages([
-        { id: 'welcome-1', type: 'bot', content: `Hey, ¿qué onda?`, feedback: null }
-    ]);
-    inputRef.current?.focus();
+    if (savedTheme) {
+      setIsDarkMode(savedTheme === 'dark');
+    }
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    setCookie('zen_theme', isDarkMode ? 'dark' : 'light');
+    if (user && chatMessages.length > 0) {
+      setCookie('zen_messages', JSON.stringify(chatMessages), 30);
+    }
+  }, [chatMessages, user]);
+
+  useEffect(() => {
+    setCookie('zen_theme', isDarkMode ? 'dark' : 'light', 365);
   }, [isDarkMode]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setCookie('zen_user', JSON.stringify(userData), 30);
+    
+    const welcomeMessage = {
+      id: Date.now().toString(),
+      type: 'bot',
+      content: `¡Hola ${userData.given_name}! Bienvenido a tu espacio zen. Estoy aquí para escucharte y ayudarte a encontrar claridad. ¿Qué te gustaría compartir hoy?`,
+      feedback: null
+    };
+    setChatMessages([welcomeMessage]);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!message.trim() || isSending) return;
 
-    setIsSending(true);
-    const userMessage = { id: Date.now().toString(), type: 'user', content: message };
-    const currentChatHistory = [...chatMessages, userMessage];
+    const userMessage = { id: Date.now().toString(), type: 'user', content: message.trim() };
+    const typingMessage = { id: (Date.now() + 1).toString(), type: 'bot', content: 'Pensando...', isTyping: true, feedback: null };
     
-    setChatMessages(currentChatHistory);
+    const currentMessage = message.trim();
+    const newMessages = [...chatMessages, userMessage];
+    
+    setChatMessages([...newMessages, typingMessage]);
     setMessage('');
-    
-    const typingMessageId = (Date.now() + 1).toString();
-    setChatMessages(prev => [...prev, { id: typingMessageId, type: 'bot', content: '...', isTyping: true, feedback: null }]);
+    setIsSending(true);
     
     try {
-      const botResponseContent = await fetchOpenRouterResponse(userMessage.content, currentChatHistory);
-      setChatMessages(prev => prev.map(msg => 
-        msg.id === typingMessageId ? { ...msg, content: botResponseContent, isTyping: false } : msg
-      ));
+      const conversationHistory = newMessages
+        .filter(msg => !msg.isTyping && msg.type !== 'system')
+        .map(msg => ({
+          role: msg.type === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }));
+
+      const response = await callOpenRouterAPI(conversationHistory);
+      const botResponse = { id: typingMessage.id, type: 'bot', content: response, feedback: null };
+      
+      setChatMessages([...newMessages, botResponse]);
+
     } catch (error) {
-      // ✅ ESTE ES EL BLOQUE QUE GENERA EL ERROR QUE VES
-      const errorMessage = "Disculpa, algo no ha funcionado bien. Podría ser un problema con la API o tu conexión. Por favor, inténtalo de nuevo más tarde.";
-      setChatMessages(prev => prev.map(msg => 
-        msg.id === typingMessageId ? { ...msg, content: errorMessage, isTyping: false, isError: true } : msg
-      ));
+      const errorResponse = { 
+        id: typingMessage.id, 
+        type: 'bot', 
+        content: "Disculpa, no pude procesar tu mensaje en este momento. Por favor, inténtalo de nuevo.", 
+        isError: true 
+      };
+      setChatMessages([...newMessages, errorResponse]);
     } finally {
       setIsSending(false);
       inputRef.current?.focus();
@@ -298,10 +627,13 @@ function App() {
   };
 
   const handleResetChat = () => {
-    setChatMessages([
-        { id: Date.now().toString(), type: 'bot', content: `Empecemos de nuevo. ¿Qué está en tu mente?`, feedback: null }
-    ]);
-    setIsMobileMenuOpen(false); // Cerrar menú móvil después de la acción
+    const resetMessage = {
+      id: Date.now().toString(),
+      type: 'bot',
+      content: `Empecemos de nuevo con calma, ${user.given_name}. Estoy aquí para ti. ¿Qué está en tu mente?`,
+      feedback: null
+    };
+    setChatMessages([resetMessage]);
   };
   
   const handleCopyMessage = (id, content) => {
@@ -316,115 +648,108 @@ function App() {
     ));
   };
 
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    setIsMobileMenuOpen(false); // Cerrar menú móvil después de la acción
-  };
-
-  const themeClasses = isDarkMode ? "bg-slate-900 text-slate-100" : "bg-white";
-  
-  return (
-    <div className={`min-h-screen font-sans ${themeClasses} transition-colors duration-500`}>
-      <div className="flex h-screen">
-        {/* Sidebar Desktop */}
-        <div className={`hidden md:flex w-20 ${isDarkMode ? 'bg-slate-800 border-r border-slate-700' : 'bg-slate-50 border-r border-slate-200'} flex-col items-center py-8 space-y-8`}>
-          <div className="relative">
-             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
-                <div className="w-4 h-4 bg-white rounded-full opacity-90"></div>
-            </div>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg animate-pulse">
+            <div className="w-8 h-8 bg-white rounded-full opacity-90"></div>
           </div>
-          <div className="flex flex-col space-y-6 flex-1 justify-center">
-            <button title="Reiniciar conversación" onClick={handleResetChat} className={`p-2 ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'} transition-all duration-300`}>
+          <p className="text-slate-500 font-light">Conectando con los servicios...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen onLogin={handleLogin} isLoading={isLoading} />;
+  }
+
+  const themeClasses = isDarkMode 
+    ? "bg-slate-900 text-slate-100" 
+    : "bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50";
+
+  return (
+    <div className={`min-h-screen font-light ${themeClasses} transition-all duration-500`}>
+      <div className="flex h-screen">
+        <div className={`w-20 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white/60 backdrop-blur-sm border-white/40'} border-r flex flex-col items-center py-8 space-y-8`}>
+          <div className="relative">
+            <div className={`w-10 h-10 ${isDarkMode ? 'bg-slate-600' : 'bg-gradient-to-br from-blue-400 to-indigo-500'} rounded-full flex items-center justify-center shadow-sm`}>
+              <div className="w-4 h-4 bg-white rounded-full opacity-90"></div>
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white"></div>
+          </div>
+          
+          <div className="flex flex-col space-y-6">
+            <button 
+              title="Reiniciar conversación" 
+              onClick={handleResetChat} 
+              className={`p-2 ${isDarkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'} transition-all duration-300 hover:scale-105`}
+            >
               <RotateCcw className="w-5 h-5" />
             </button>
-            <button title="Alternar tema" onClick={toggleDarkMode} className={`p-2 ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'} transition-all duration-300`}>
+            <button 
+              title="Insights semanales" 
+              onClick={() => setShowWeeklyInsights(true)} 
+              className={`p-2 ${isDarkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'} transition-all duration-300 hover:scale-105`}
+            >
+              <Sparkles className="w-5 h-5" />
+            </button>
+            <button 
+              title="Alternar tema" 
+              onClick={() => setIsDarkMode(!isDarkMode)} 
+              className={`p-2 ${isDarkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'} transition-all duration-300 hover:scale-105`}
+            >
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
           </div>
+          
+          <div className="flex-1"></div>
+          
+          <UserMenu user={user} onLogout={handleLogout} isDarkMode={isDarkMode} />
         </div>
 
-        {/* Main Content */}
         <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <div className={`h-16 ${isDarkMode ? 'bg-slate-900 border-b border-slate-800' : 'bg-white border-b border-slate-100'} flex items-center justify-between px-4 md:px-8`}>
+          <div className={`h-16 ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white/40 backdrop-blur-sm border-white/40'} border-b flex items-center justify-between px-8`}>
             <div className="flex items-center space-x-3">
-              {/* Mobile Menu Button */}
-              <button 
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className={`md:hidden p-2 ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'} transition-all duration-300`}
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-              <span className={`${isDarkMode ? 'text-slate-200' : 'text-slate-800'} font-bold text-lg`}>serenly</span>
+              <div className={`w-2 h-2 ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'} rounded-full`}></div>
+              <span className={`${isDarkMode ? 'text-slate-300' : 'text-slate-600'} font-light tracking-wide`}>asistente zen • IA</span>
             </div>
-            <div className="flex items-center space-x-2">
-                <div className="w-2.5 h-2.5 bg-green-400 rounded-full"></div>
-                <span className={`${isDarkMode ? 'text-slate-400' : 'text-slate-500'} text-sm hidden sm:inline`}>Online</span>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 bg-emerald-400 rounded-full`}></div>
+                <span className={`${isDarkMode ? 'text-slate-400' : 'text-slate-500'} text-sm font-light`}>OpenRouter API</span>
+              </div>
+              <span className={`${isDarkMode ? 'text-slate-400' : 'text-slate-500'} text-sm font-light`}>
+                {user.given_name}
+              </span>
             </div>
           </div>
 
-          {/* Mobile Menu Overlay */}
-          {isMobileMenuOpen && (
-            <div className="md:hidden fixed inset-0 z-50 flex">
-              <div 
-                className="fixed inset-0 bg-black bg-opacity-50" 
-                onClick={() => setIsMobileMenuOpen(false)}
-              />
-              <div className={`relative w-64 ${isDarkMode ? 'bg-slate-800' : 'bg-white'} shadow-xl`}>
-                <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-                  <span className={`${isDarkMode ? 'text-slate-200' : 'text-slate-800'} font-bold text-lg`}>Menu</span>
-                  <button 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`p-2 ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'}`}
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="p-4 space-y-4">
-                  <button 
-                    onClick={handleResetChat}
-                    className={`flex items-center space-x-3 w-full p-3 rounded-lg ${isDarkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-100'} transition-all duration-300`}
-                  >
-                    <RotateCcw className="w-5 h-5" />
-                    <span>Reiniciar conversación</span>
-                  </button>
-                  <button 
-                    onClick={toggleDarkMode}
-                    className={`flex items-center space-x-3 w-full p-3 rounded-lg ${isDarkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-100'} transition-all duration-300`}
-                  >
-                    {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                    <span>{isDarkMode ? 'Tema claro' : 'Tema oscuro'}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="flex-1 overflow-y-auto p-8">
             <div className="max-w-3xl mx-auto">
-              <div className="space-y-6 md:space-y-8">
+              <div className="space-y-8">
                 {chatMessages.map((msg) => (
                   <div key={msg.id} className={`flex group ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.type === 'bot' && (
-                      <div className="flex items-start space-x-3 md:space-x-4 max-w-full md:max-w-2xl">
-                         <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-md">
-                            <div className="w-3 h-3 md:w-4 md:h-4 bg-white rounded-full opacity-75"></div>
+                      <div className="flex items-start space-x-4 max-w-2xl">
+                        <div className={`w-10 h-10 ${isDarkMode ? 'bg-slate-600' : 'bg-gradient-to-br from-blue-400 to-indigo-500'} rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm`}>
+                          <div className="w-4 h-4 bg-white rounded-full opacity-90"></div>
                         </div>
-                        <div className={`relative rounded-2xl px-4 py-3 md:px-5 shadow-sm ${msg.isError ? (isDarkMode ? 'bg-red-800/50' : 'bg-red-50 text-red-800') : (isDarkMode ? 'bg-slate-800' : 'bg-slate-100')} `}>
-                          <p className={`leading-relaxed text-sm md:text-base ${msg.isTyping ? 'animate-pulse' : ''} ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                        <div className={`relative rounded-3xl px-6 py-4 shadow-sm ${msg.isError ? (isDarkMode ? 'bg-red-900/50 border-red-800' : 'bg-red-50 border-red-200') : (isDarkMode ? 'bg-slate-700/50 border-slate-600' : 'bg-white/70 backdrop-blur-sm border-white/50')} border`}>
+                          <p className={`font-light leading-relaxed whitespace-pre-wrap ${msg.isError ? (isDarkMode ? 'text-red-300' : 'text-red-700') : (isDarkMode ? 'text-slate-200' : 'text-slate-700')} ${msg.isTyping ? 'animate-pulse' : ''}`}>
                             {msg.content}
                           </p>
                           {!msg.isTyping && !msg.isError && (
-                            <div className="absolute -bottom-4 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-60 transition-opacity duration-300">
-                              <button onClick={() => handleCopyMessage(msg.id, msg.content)} title="Copiar" className={`p-1.5 rounded-full ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-200'}`}>
-                                <Clipboard className="w-3 h-3 md:w-3.5 md:h-3.5"/>
+                            <div className="absolute -bottom-5 right-4 flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                              <button onClick={() => handleCopyMessage(msg.id, msg.content)} className={`p-1.5 ${isDarkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'} hover:bg-white/50 rounded-full transition-all duration-200`}>
+                                {copiedId === msg.id ? <ClipboardCheck className="w-3 h-3 text-emerald-500"/> : <Clipboard className="w-3 h-3"/>}
                               </button>
-                              <button onClick={() => handleFeedback(msg.id, 'like')} title="Me gusta" className={`p-1.5 rounded-full ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-200'}`}>
-                                <ThumbsUp className={`w-3 h-3 md:w-3.5 md:h-3.5 ${msg.feedback === 'like' ? 'text-blue-500' : ''}`}/>
+                              <button onClick={() => handleFeedback(msg.id, 'like')} className={`p-1.5 ${isDarkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'} hover:bg-white/50 rounded-full transition-all duration-200`}>
+                                <ThumbsUp className={`w-3 h-3 ${msg.feedback === 'like' ? 'text-blue-500 fill-current' : ''}`}/>
                               </button>
-                              <button onClick={() => handleFeedback(msg.id, 'dislike')} title="No me gusta" className={`p-1.5 rounded-full ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-200'}`}>
-                                <ThumbsDown className={`w-3 h-3 md:w-3.5 md:h-3.5 ${msg.feedback === 'dislike' ? 'text-red-500' : ''}`}/>
+                              <button onClick={() => handleFeedback(msg.id, 'dislike')} className={`p-1.5 ${isDarkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'} hover:bg-white/50 rounded-full transition-all duration-200`}>
+                                <ThumbsDown className={`w-3 h-3 ${msg.feedback === 'dislike' ? 'text-red-500 fill-current' : ''}`}/>
                               </button>
                             </div>
                           )}
@@ -432,8 +757,8 @@ function App() {
                       </div>
                     )}
                     {msg.type === 'user' && (
-                      <div className="bg-indigo-600 text-white rounded-2xl px-4 py-3 md:px-5 max-w-xs md:max-w-lg shadow-md">
-                        <p className="leading-relaxed text-sm md:text-base">{msg.content}</p>
+                      <div className={`${isDarkMode ? 'bg-slate-600/50 border-slate-500' : 'bg-gradient-to-r from-slate-100 to-blue-100 border-slate-200'} rounded-3xl px-6 py-4 max-w-lg shadow-sm border backdrop-blur-sm`}>
+                        <p className={`${isDarkMode ? 'text-slate-200' : 'text-slate-700'} font-light leading-relaxed whitespace-pre-wrap`}>{msg.content}</p>
                       </div>
                     )}
                   </div>
@@ -443,36 +768,68 @@ function App() {
             </div>
           </div>
 
-          {/* Input Area */}
-          <div className={`${isDarkMode ? 'bg-slate-900 border-t border-slate-800' : 'bg-white border-t border-slate-100'} p-4 md:p-6 safe-area-pb`}>
+          <div className={`${isDarkMode ? 'bg-slate-800/30 border-slate-700' : 'bg-white/30 backdrop-blur-sm border-white/40'} border-t p-8`}>
             <div className="max-w-3xl mx-auto">
               <div className="relative">
                 <textarea
                   ref={inputRef}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder={isSending ? "..." : "Escribe tu mensaje aquí..."}
-                  rows="1"
-                  className={`w-full px-4 py-3 md:px-5 pr-14 md:pr-16 text-sm md:text-base ${isDarkMode ? 'bg-slate-800 text-slate-200 placeholder-slate-500' : 'bg-slate-100 text-slate-800 placeholder-slate-400'} border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all duration-300`}
+                  placeholder={isSending ? "Procesando con IA..." : "Comparte tus pensamientos..."}
+                  rows="3"
+                  className={`w-full px-6 py-4 pr-24 ${isDarkMode ? 'bg-slate-700/50 border-slate-600 text-slate-200 placeholder-slate-400' : 'bg-white/60 backdrop-blur-sm border-white/50 text-slate-700 placeholder-slate-400'} border rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-400/50 resize-none font-light leading-relaxed disabled:opacity-50 transition-all duration-300`}
                   disabled={isSending}
-                  onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
                 />
-                <div className="absolute bottom-2 md:bottom-2.5 right-2 md:right-2.5 flex items-center">
+                <div className="absolute bottom-4 right-4 flex items-center space-x-2">
+                  {message && !isSending && (
+                    <button onClick={() => setMessage('')} className={`p-2 ${isDarkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'} hover:bg-white/50 rounded-full transition-all duration-200`}>
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                   <button 
                     onClick={handleSendMessage} 
                     disabled={!message.trim() || isSending} 
-                    className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed transition-all duration-200"
+                    className={`p-2 ${isDarkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'} hover:bg-white/50 rounded-full disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105`}
                   >
-                    <ArrowUp className="w-4 h-4 md:w-5 md:h-5" />
+                    {isSending ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <ArrowUp className="w-4 h-4" />
+                    )}
                   </button>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-center mt-4 space-x-4">
+                <div className="flex items-center space-x-2">
+                  <div className={`w-2 h-2 ${isSending ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'} rounded-full`}></div>
+                  <span className={`${isDarkMode ? 'text-slate-500' : 'text-slate-400'} text-xs font-light`}>
+                    {isSending ? 'Procesando con IA...' : 'Listo para conversar'}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                  <span className={`${isDarkMode ? 'text-slate-500' : 'text-slate-400'} text-xs font-light`}>
+                    Listo para escucharte
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {showWeeklyInsights && (
+        <WeeklyInsights onClose={() => setShowWeeklyInsights(false)} user={user} />
+      )}
     </div>
   );
 };
 
-export default App;
+export default ZenChatbot;
